@@ -111,7 +111,7 @@ class RfqClient:
     # Request-side methods
     # =========================================================================
 
-    def create_rfq_request(
+    async def create_rfq_request(
         self,
         user_request: RfqUserRequest,
         options: Optional[PartialCreateOrderOptions] = None,
@@ -214,9 +214,9 @@ class RfqClient:
         }
         serialized_body = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("POST", CREATE_RFQ_REQUEST, body, serialized_body)
-        return post(self._build_url(CREATE_RFQ_REQUEST), headers=headers, data=serialized_body)
+        return await post(self._build_url(CREATE_RFQ_REQUEST), headers=headers, data=serialized_body)
 
-    def cancel_rfq_request(self, params: CancelRfqRequestParams) -> str:
+    async def cancel_rfq_request(self, params: CancelRfqRequestParams) -> str:
         """
         Cancel an RFQ request.
 
@@ -231,9 +231,9 @@ class RfqClient:
         body = {"requestId": params.request_id}
         serialized_body = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("DELETE", CANCEL_RFQ_REQUEST, body, serialized_body)
-        return delete(self._build_url(CANCEL_RFQ_REQUEST), headers=headers, data=serialized_body)
+        return await delete(self._build_url(CANCEL_RFQ_REQUEST), headers=headers, data=serialized_body)
 
-    def get_rfq_requests(
+    async def get_rfq_requests(
         self, params: Optional[GetRfqRequestsParams] = None
     ) -> dict:
         """
@@ -256,13 +256,13 @@ class RfqClient:
             query_string = "&".join(f"{k}={v}" for k, v in query_params.items())
             url = f"{url}?{query_string}"
 
-        return get(url, headers=headers)
+        return await get(url, headers=headers)
 
     # =========================================================================
     # Quote-side methods
     # =========================================================================
 
-    def create_rfq_quote(
+    async def create_rfq_quote(
         self,
         user_quote: RfqUserQuote,
         options: Optional[PartialCreateOrderOptions] = None,
@@ -370,9 +370,9 @@ class RfqClient:
         }
         serialized_body = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("POST", CREATE_RFQ_QUOTE, body, serialized_body)
-        return post(self._build_url(CREATE_RFQ_QUOTE), headers=headers, data=serialized_body)
+        return await post(self._build_url(CREATE_RFQ_QUOTE), headers=headers, data=serialized_body)
 
-    def get_rfq_quotes(self, params: Optional[GetRfqQuotesParams] = None) -> dict:
+    async def get_rfq_quotes(self, params: Optional[GetRfqQuotesParams] = None) -> dict:
         """
         Get RFQ quotes with optional filtering.
 
@@ -393,9 +393,9 @@ class RfqClient:
             query_string = "&".join(f"{k}={v}" for k, v in query_params.items())
             url = f"{url}?{query_string}"
 
-        return get(url, headers=headers)
+        return await get(url, headers=headers)
 
-    def get_rfq_best_quote(
+    async def get_rfq_best_quote(
         self, params: Optional[GetRfqBestQuoteParams] = None
     ) -> dict:
         """
@@ -415,9 +415,9 @@ class RfqClient:
         if params and params.request_id:
             url = f"{url}?requestId={params.request_id}"
 
-        return get(url, headers=headers)
+        return await get(url, headers=headers)
 
-    def cancel_rfq_quote(self, params: CancelRfqQuoteParams) -> str:
+    async def cancel_rfq_quote(self, params: CancelRfqQuoteParams) -> str:
         """
         Cancel an RFQ quote.
 
@@ -432,13 +432,13 @@ class RfqClient:
         body = {"quoteId": params.quote_id}
         serialized_body = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("DELETE", CANCEL_RFQ_QUOTE, body, serialized_body)
-        return delete(self._build_url(CANCEL_RFQ_QUOTE), headers=headers, data=serialized_body)
+        return await delete(self._build_url(CANCEL_RFQ_QUOTE), headers=headers, data=serialized_body)
 
     # =========================================================================
     # Trade execution methods
     # =========================================================================
 
-    def accept_rfq_quote(self, params: AcceptQuoteParams) -> str:
+    async def accept_rfq_quote(self, params: AcceptQuoteParams) -> str:
         """
         Accept an RFQ quote (requester side).
 
@@ -455,7 +455,7 @@ class RfqClient:
         """
         self._ensure_l2_auth()
 
-        resp = self.get_rfq_quotes(
+        resp = await self.get_rfq_quotes(
             GetRfqQuotesParams(quote_ids=[params.quote_id])
         )
 
@@ -513,13 +513,13 @@ class RfqClient:
         )
         serialized_body = json.dumps(accept_payload, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("POST", RFQ_REQUESTS_ACCEPT, accept_payload, serialized_body)
-        return post(
+        return await post(
             self._build_url(RFQ_REQUESTS_ACCEPT),
             headers=headers,
             data=serialized_body,
         )
 
-    def approve_rfq_order(self, params: ApproveOrderParams) -> str:
+    async def approve_rfq_order(self, params: ApproveOrderParams) -> str:
         """
         Approve an RFQ order (quoter side).
 
@@ -537,7 +537,7 @@ class RfqClient:
         self._ensure_l2_auth()
 
         # Step 1: Fetch the RFQ quote
-        rfq_quotes = self.get_rfq_quotes(
+        rfq_quotes = await self.get_rfq_quotes(
             GetRfqQuotesParams(quote_ids=[params.quote_id])
         )
 
@@ -596,7 +596,7 @@ class RfqClient:
         }
         serialized_body = json.dumps(approve_payload, separators=(",", ":"), ensure_ascii=False)
         headers = self._get_l2_headers("POST", RFQ_QUOTE_APPROVE, approve_payload, serialized_body)
-        return post(
+        return await post(
             self._build_url(RFQ_QUOTE_APPROVE),
             headers=headers,
             data=serialized_body,
@@ -606,7 +606,7 @@ class RfqClient:
     # Configuration
     # =========================================================================
 
-    def rfq_config(self) -> dict:
+    async def rfq_config(self) -> dict:
         """
         Get RFQ configuration from the server.
 
@@ -616,7 +616,7 @@ class RfqClient:
         self._ensure_l2_auth()
 
         headers = self._get_l2_headers("GET", RFQ_CONFIG)
-        return get(self._build_url(RFQ_CONFIG), headers=headers)
+        return await get(self._build_url(RFQ_CONFIG), headers=headers)
 
     def _get_request_order_creation_payload(self, quote: dict) -> dict:
         """
